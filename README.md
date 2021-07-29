@@ -26,5 +26,12 @@ Once they are installed on your system, just run the following in your PS Consol
 Import-Module DataToolsHelpers.ps1
 ```
 
-Check what commands are availab with Get-Command -Module DataToolsHelpers
+Check what commands are availab with:
 
+``` powershell
+Get-Command -Module DataToolsHelpers
+```
+
+Today you should see Build-FormatFile, Build-DataFile, and Sync-DataFile available to you.
+
+I am still working on the schema migration bits from either sqlpackage or pure sql, but if you can make sure your skeleton is there you should be good to go.
