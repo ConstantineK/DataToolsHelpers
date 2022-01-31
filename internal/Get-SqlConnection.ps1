@@ -10,7 +10,6 @@ function Get-SqlConnection {
       [parameter(ValueFromPipeline, Mandatory=$true)]
       [ValidateNotNullOrEmpty()]
       [string]$Database,
-      [string]$Script = $null,
       [string]$Username,
       [string]$Password,
       [int]$Timeout = 300
@@ -20,7 +19,7 @@ function Get-SqlConnection {
     $SqlConnection = New-Object System.Data.SqlClient.SqlConnection
   }
   process {
-    if($Username -or $Password){
+    if($Password){
       $SqlConnection.ConnectionString = "Server=$ServerInstance;Database=$Database;User Id=$Username;Password=$Password;Trusted_Connection=False;Connection Timeout=$Timeout;"
     }
     else {
