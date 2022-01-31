@@ -16,14 +16,14 @@ function Invoke-Query {
         [string]$Password,
         [int]$Timeout = 300
     )
-    if (-not$Script -and -not$Filename) {
+    if (-not $Script -and -not $Filename) {
         Write-Error "You must provide either a script or a filename to run".
     }
 
     Write-Debug "Invoke-Query"
     Write-Debug "$ServerInstance $Database $Username $Timeout"
 
-    if (-not$Script -and $filename) {
+    if (-not $Script -and $filename) {
         $script = Get-Content $filename -Raw
     }
 

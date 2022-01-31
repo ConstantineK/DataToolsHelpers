@@ -352,4 +352,5 @@ MigrationBackup/
 # Default data and file extensions for this project
 *.dat
 *.fmt
-.idea/
+.idea/*
+.out/*

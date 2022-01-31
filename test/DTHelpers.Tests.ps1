@@ -37,7 +37,7 @@ Describe "Export-DataSet" {
 
     It "Should be able to throw an exception if the query is borked" {
         {
-        $SqlBatch = "SELECT 1/0 AS err"
+        $SqlBatch = "HIBBIDITY JIBBITDY"
         $dt = Export-DataTable -SqlBatch $SqlBatch -SqlConnection $SqlConnection
         } | Should -Throw
     }
@@ -96,18 +96,18 @@ SELECT TOP 0 * FROM sys.columns"
         $data[0].columns | Should -Not -BeNullOrEmpty
         $data[1].columns | Should -Not -BeNullOrEmpty
 
-        $data[0] | Should -BeOfType System.Data.DataTable
-        $data[1] | Should -BeOfType System.Data.DataTable
+
     }
 
     It "Should be able to processes queries MP" {
+
         {
             $sqlfiles | Foreach-Object  -ThrottleLimit 4 -Parallel {
                 # Use the context of the sql file itself
                 # This will be brittle and I just dont care
                 $ModuleRoot = "C:\Users\ck\Desktop\pycharm\DataToolsHelpers"
                 Import-Module (Join-Path $ModuleRoot "DataToolsHelpers.psd1")
-                Invoke-Query -ServerInstance $using:ServerInstance -Database $using:Database -Script $_
+                Invoke-Query -ServerInstance $using:ServerInstance -Database $using:Database -Filename $_
             }
         } | Should -Not -Throw
     }
@@ -116,30 +116,23 @@ SELECT TOP 0 * FROM sys.columns"
         # This is going to become a function in my shit
 
         $OutFolder = "out"
+        Remove-Item "out" -Force -Recurse
         New-Item -Type Directory -Path "out" -ErrorAction SilentlyContinue
 
+        # in the cas eof a zero row table we export and it fails
+        # we need a custom method potentially
+        # or we need to be ok with a blank file
+        # if we say a file not existing means we dont have any data
+        # it makes the comparison easier
         foreach ($file in $sqlfiles) {
             # we know the name of the sql file and we know they are all in a folder
             # so we assume if we change the extension we win
             # this way also we can bag of name/value stuff
             $data = Invoke-Query -Filename $file
             $filename = [System.IO.Path]::GetFileNameWithoutExtension($file)
-            $counter = $null
 
-            foreach ($table in $data) {
-                if ($table.Rows) {
-                    $table.Rows | ConvertTo-Csv | Out-File (join-path $OutFolder "$Filename$counter.csv")
-                }
-                elseif ($table.Columns) {
-                    $table.Columns | ConvertTo-Csv | Out-File (join-path $OutFolder "$Filename$counter.csv")
-                }
-                else {
-                    Write-host "$file has nada"
-                }
-                $counter = $counter + 1
+            Convert-DataTableToCsv -DataTables $data -Filename (join-path $outfolder $filename)
 
-            }
         }
-
     }
 }
