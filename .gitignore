@@ -353,4 +353,4 @@ MigrationBackup/
 *.dat
 *.fmt
 .idea/*
-.out/*
+out/*

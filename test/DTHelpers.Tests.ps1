@@ -38,8 +38,8 @@ Describe "Export-DataSet" {
 
     It "Should be able to throw an exception if the query is borked" {
         {
-        $SqlBatch = "HIBBIDITY JIBBITDY"
-        $dt = Export-DataTable -SqlBatch $SqlBatch -SqlConnection $SqlConnection
+            $SqlBatch = "HIBBIDITY JIBBITDY"
+            $dt = Export-DataTable -SqlBatch $SqlBatch -SqlConnection $SqlConnection
         } | Should -Throw
     }
 }
@@ -134,21 +134,13 @@ SELECT TOP 0 * FROM sys.columns"
     }
 
     It "Should be able to write the output of queries to files in parallel " {
-        # This is going to become a function in my shit
+
 
         $OutFolder = "out"
         Remove-Item "out" -Force -Recurse
         New-Item -Type Directory -Path "out" -ErrorAction SilentlyContinue
 
-        # in the cas eof a zero row table we export and it fails
-        # we need a custom method potentially
-        # or we need to be ok with a blank file
-        # if we say a file not existing means we dont have any data
-        # it makes the comparison easier
         $sqlfiles | Foreach-Object -ThrottleLimit $ThrottleLimit -Parallel {
-            # we know the name of the sql file and we know they are all in a folder
-            # so we assume if we change the extension we win
-            # this way also we can bag of name/value stuff
             Import-Module (Join-Path $using:ModuleRoot "DataToolsHelpers.psd1")
             $data = Invoke-Query -Filename $_ -ServerInstance $using:ServerInstance -Database $using:Database
             $filename = [System.IO.Path]::GetFileNameWithoutExtension($_)
@@ -172,11 +164,10 @@ Describe "Comparing Databases" {
     }
 
     It "Should complain what things are missing in the diffs" {
-         throw "Not implemented"
+        throw "Not implemented"
     }
 
     It "Should be able to do this in parallel" {
-         throw "Not implemented"
+        throw "Not implemented"
     }
-
 }
