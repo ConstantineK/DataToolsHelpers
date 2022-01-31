@@ -9,6 +9,7 @@ BeforeAll {
         "*:ServerInstance" = $ServerInstance
         "*:Database" = $Database
     }
+    $ThrottleLimit = 6
 
 }
 
@@ -43,7 +44,6 @@ Describe "Export-DataSet" {
     }
 }
 
-
 Describe "Invoke-Query" {
     BeforeAll {
         $sqlfiles = Get-ChildItem (Join-Path $ModuleRoot "schemazen" "sql") -Filter "*.sql" |
@@ -68,6 +68,21 @@ Describe "Invoke-Query" {
         $Results.rows.Count | Should -BeGreaterOrEqual 100
     }
 
+
+    It "Should able to handle multi-zero batch queries." {
+        # If we have two queries with columns we'd expect two objects in the list (dts)
+        # Both with no rows but cols
+        # So somehow we get a 0, a 1, and then the acutal data
+        $data = Invoke-Query -Script "
+        SELECT TOP (0) * FROM sys.tables
+GO
+SELECT TOP 0 * FROM sys.columns"
+
+        $data.count | Should -BeExactly 2
+        $data[0].columns | Should -Not -BeNullOrEmpty
+        $data[1].columns | Should -Not -BeNullOrEmpty
+    }
+
     It "Should witness all of our configuration queries." {
         foreach ($file in $sqlfiles) {
             Test-Path $file | Should -BeTrue
@@ -83,30 +98,12 @@ Describe "Invoke-Query" {
         }
     }
 
-    It "Should able to handle multi-zero batch queries." {
-        # If we have two queries with columns we'd expect two objects in the list (dts)
-        # Both with no rows but cols
-        # So somehow we get a 0, a 1, and then the acutal data
-        $data = Invoke-Query -Script "
-        SELECT TOP (0) * FROM sys.tables
-GO
-SELECT TOP 0 * FROM sys.columns"
-
-        $data.count | Should -BeExactly 2
-        $data[0].columns | Should -Not -BeNullOrEmpty
-        $data[1].columns | Should -Not -BeNullOrEmpty
-
-
-    }
-
     It "Should be able to processes queries MP" {
-
         {
-            $sqlfiles | Foreach-Object  -ThrottleLimit 4 -Parallel {
+            $sqlfiles | Foreach-Object  -ThrottleLimit $ThrottleLimit -Parallel {
                 # Use the context of the sql file itself
                 # This will be brittle and I just dont care
-                $ModuleRoot = "C:\Users\ck\Desktop\pycharm\DataToolsHelpers"
-                Import-Module (Join-Path $ModuleRoot "DataToolsHelpers.psd1")
+                Import-Module (Join-Path $using:ModuleRoot "DataToolsHelpers.psd1")
                 Invoke-Query -ServerInstance $using:ServerInstance -Database $using:Database -Filename $_
             }
         } | Should -Not -Throw
@@ -135,4 +132,51 @@ SELECT TOP 0 * FROM sys.columns"
 
         }
     }
+
+    It "Should be able to write the output of queries to files in parallel " {
+        # This is going to become a function in my shit
+
+        $OutFolder = "out"
+        Remove-Item "out" -Force -Recurse
+        New-Item -Type Directory -Path "out" -ErrorAction SilentlyContinue
+
+        # in the cas eof a zero row table we export and it fails
+        # we need a custom method potentially
+        # or we need to be ok with a blank file
+        # if we say a file not existing means we dont have any data
+        # it makes the comparison easier
+        $sqlfiles | Foreach-Object -ThrottleLimit $ThrottleLimit -Parallel {
+            # we know the name of the sql file and we know they are all in a folder
+            # so we assume if we change the extension we win
+            # this way also we can bag of name/value stuff
+            Import-Module (Join-Path $using:ModuleRoot "DataToolsHelpers.psd1")
+            $data = Invoke-Query -Filename $_ -ServerInstance $using:ServerInstance -Database $using:Database
+            $filename = [System.IO.Path]::GetFileNameWithoutExtension($_)
+            Convert-DataTableToCsv -DataTables $data -Filename (join-path $using:outfolder $filename)
+        }
+    }
+}
+
+Describe "Comparing Databases" {
+
+    It "Should ensure all sets are ordered and compareable" {
+        throw "Not implemented"
+    }
+
+    It "Should be able to compare two or more sets of databases" {
+        throw "Not implemented"
+    }
+
+    It "Should be able to compare two or more sets of files" {
+        throw "Not implemented"
+    }
+
+    It "Should complain what things are missing in the diffs" {
+         throw "Not implemented"
+    }
+
+    It "Should be able to do this in parallel" {
+         throw "Not implemented"
+    }
+
 }
