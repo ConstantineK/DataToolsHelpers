@@ -212,6 +212,8 @@ Describe "Comparing Databases" {
             Should -Not -BeNullOrEmpty
     }
 
+    It "Should be able to export the differences into useful line numbers for files" {}
+
     It "Should be able to filter what it compares to one set of things (eg tables)"{
         throw "Not implemented yet"
     }
