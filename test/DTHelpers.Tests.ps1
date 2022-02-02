@@ -212,10 +212,18 @@ Describe "Comparing Databases" {
             Should -Not -BeNullOrEmpty
     }
 
-    It "Should be able to export the differences into useful line numbers for files" {}
+    It "Should be able to export the differences into useful line numbers for files" {
+        # Since we know which line in the hash list is the problem or set of problems
+        # We know what lines in the file are different
+        # Really for the metadata its not helping us that much
+        # Most of these queries are just metadata csvs - compare object is actually ok at doing that
+        # It might be better to create two hash tables for each csv row and then compare them
+        # We can separately create the object as needed and highlight the changes (because we know which portion has that) 
+        throw "Not implemented"
+    }
 
     It "Should be able to filter what it compares to one set of things (eg tables)"{
-        throw "Not implemented yet"
+        throw "Not implemented"
     }
 
     It "Should use the cache file to compare N sets of systems" {
