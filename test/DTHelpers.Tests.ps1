@@ -1,7 +1,7 @@
 BeforeAll {
     $ModuleRoot = ([System.IO.Path]::GetDirectoryName($PSScriptRoot))
     Write-Host "Import $( Join-Path $ModuleRoot "DataToolsHelpers.psd1" )"
-    Remove-Module DataToolsHelpers
+    Remove-Module DataToolsHelpers -ErrorAction SilentlyContinue
     Import-Module (Join-Path $ModuleRoot "DataToolsHelpers.psd1") -Force
 
     $ServerInstance = "localhost"
@@ -148,23 +148,15 @@ SELECT TOP 0 * FROM sys.columns"
     }
 }
 
-
 Describe "Comparing Databases" {
     BeforeAll{
         $outfiles = Get-ChildItem (Join-Path $ModuleRoot "out" ) -Filter "*.csv" |
             Select-Object -ExpandProperty FullName
     }
 
-    It "Should convert a folder of CSV object properties into hash sets per file"{
-        # Take the csv files
-        # For each line in the csv produce a hash
-        # Order the hashes
-        # compare-object the hashes
-
+    It "Should output a hashlist that's consistent across objects"{
 
         $DatabaseHashes = Get-DatabaseHashes -Folder (Join-Path $ModuleRoot "out" )
-
-
 
         # Establish how many sub values the first key has
         $subkeycount = 0
@@ -181,16 +173,47 @@ Describe "Comparing Databases" {
         $subkeycount | Should -Not -BeExactly 0
     }
 
-    It "Should be able to export a cache file with reproducible hashes across systems" {
-        # We really need two machines to be able to test that
-        throw "Not implemented"
+    It "Should be able to take two sets of files and compare them" {
+        # The simplest way is to use two folders we create
+        # We can mock these files
+        # We can create files
+        # We dont have any function that writes them to disk
+
+        # if we mock Get-DatabaseHashes we can use a defacto one
+        Mock Get-DatabaseHashes {
+            $Data = Get-Content -Raw $PSScriptRoot\hashlist.json |
+                ConvertFrom-Json -Depth 5 -AsHashTable
+
+            # Hashlines needs to be a list when we rehydrate it
+            # For some single value hash lists it will be a problem when we do type conversions
+            # but compare object should work the same so who cares
+            return $data
+        }
+        $Hashes = Get-DatabaseHashes
+        $SecondHash = Get-DatabaseHashes
+        $Hashes | Should -BeOfType System.Collections.HashTable
+        $SecondHash | Should -BeOfType System.Collections.HashTable
+
+        # To compare a hash setup we need to compare each key
+        # and then each sub key on the hashlines
+        # we need the list of both to eliminate each other
+        # first one deletes rows from the other and the other way
+        # we could also put them in a big list and order them and remove
+        # duplicates
+
+        $sec = 'foreign_keys'
+        Compare-DatabaseHashes -HashSetOne $Hashes -HashSetTwo $SecondHash |
+            Should -BeNullOrEmpty
+
+        $SecondHash[$sec].FileHash = 'akasdfjklasdflkjasd'
+        $SecondHash[$sec].HashLines = 'akasdfjklasdflkjasd'
+
+        Compare-DatabaseHashes -HashSetOne $Hashes -HashSetTwo $SecondHash  |
+            Should -Not -BeNullOrEmpty
     }
 
-    It "Should be able to take two sets of files and compare them" {
-        # First we create a file
-        # Then we change the csv data
-        # Then we hash it again
-        # Then we should find it
+    It "Should be able to filter what it compares to one set of things (eg tables)"{
+        throw "Not implemented yet"
     }
 
     It "Should use the cache file to compare N sets of systems" {
