@@ -1,6 +1,7 @@
 BeforeAll {
     $ModuleRoot = ([System.IO.Path]::GetDirectoryName($PSScriptRoot))
     Write-Host "Import $( Join-Path $ModuleRoot "DataToolsHelpers.psd1" )"
+    Remove-Module DataToolsHelpers
     Import-Module (Join-Path $ModuleRoot "DataToolsHelpers.psd1") -Force
 
     $ServerInstance = "localhost"
@@ -134,8 +135,6 @@ SELECT TOP 0 * FROM sys.columns"
     }
 
     It "Should be able to write the output of queries to files in parallel " {
-
-
         $OutFolder = "out"
         Remove-Item "out" -Force -Recurse
         New-Item -Type Directory -Path "out" -ErrorAction SilentlyContinue
@@ -149,25 +148,61 @@ SELECT TOP 0 * FROM sys.columns"
     }
 }
 
+
 Describe "Comparing Databases" {
+    BeforeAll{
+        $outfiles = Get-ChildItem (Join-Path $ModuleRoot "out" ) -Filter "*.csv" |
+            Select-Object -ExpandProperty FullName
+    }
 
-    It "Should ensure all sets are ordered and compareable" {
+    It "Should convert a folder of CSV object properties into hash sets per file"{
+        # Take the csv files
+        # For each line in the csv produce a hash
+        # Order the hashes
+        # compare-object the hashes
+
+
+        $DatabaseHashes = Get-DatabaseHashes -Folder (Join-Path $ModuleRoot "out" )
+
+
+
+        # Establish how many sub values the first key has
+        $subkeycount = 0
+        foreach($key in $DatabaseHashes.keys){
+                if ($subkeycount -eq 0){
+                    $subkeycount = $DatabaseHashes[$key].keys.count
+                } else {
+                    # if each key has the same amount of subkeys the shape of the object is normal
+                    # this might be fucked and be blank, but we check that later
+                    $subkeycount | Should -BeExactly $DatabaseHashes[$key].keys.count
+                }
+
+            }
+        $subkeycount | Should -Not -BeExactly 0
+    }
+
+    It "Should be able to export a cache file with reproducible hashes across systems" {
+        # We really need two machines to be able to test that
         throw "Not implemented"
     }
 
-    It "Should be able to compare two or more sets of databases" {
+    It "Should be able to take two sets of files and compare them" {
+        # First we create a file
+        # Then we change the csv data
+        # Then we hash it again
+        # Then we should find it
+    }
+
+    It "Should use the cache file to compare N sets of systems" {
+        # If we go through the trouble of generating hashes we should be able to compare them all
+        # We can also have different levels of generation
+        # Offline diff
+        # Offline full
+        # Online Diff
+        # Online Full
+        # Offline anything requires online full once, but then we can do whatever
+        # We need
         throw "Not implemented"
     }
 
-    It "Should be able to compare two or more sets of files" {
-        throw "Not implemented"
-    }
-
-    It "Should complain what things are missing in the diffs" {
-        throw "Not implemented"
-    }
-
-    It "Should be able to do this in parallel" {
-        throw "Not implemented"
-    }
 }
